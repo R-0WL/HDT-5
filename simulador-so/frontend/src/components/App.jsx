@@ -34,32 +34,50 @@ const App = () => {
   });
   
   // Iniciar una simulación
-  const startSimulation = async () => {
-    setLoading(true);
-    try {
-      const data = await runSimulation(params);
-      setResults(data);
-      
-      if (data.processes) {
-        setProcesses(data.processes.slice(0, 10)); // Mostrar solo los primeros 10
-      }
-      
-      if (data.timeSeriesData && data.timeSeriesData.length > 0) {
-        // Tomar el último registro de series temporales para mostrar el estado final
-        const lastEntry = data.timeSeriesData[data.timeSeriesData.length - 1];
-        setMemoryUsed(params.ramMemory - lastEntry.memoryLevel);
-        setStateCounts(lastEntry.statesCount);
-      }
-      
-      // Cambiar a la pestaña de resultados
-      setActiveTab('results');
-    } catch (error) {
-      console.error("Error en la simulación:", error);
-      alert("Error al ejecutar la simulación. Consulta la consola para más detalles.");
-    } finally {
-      setLoading(false);
+  // En App.jsx, modifica la función startSimulation
+const startSimulation = async () => {
+  setLoading(true);
+  try {
+    const data = await runSimulation(params);
+    setResults(data);
+    
+    if (data.processes) {
+      setProcesses(data.processes.slice(0, 10));
     }
-  };
+    
+    if (data.timeSeriesData && data.timeSeriesData.length > 0) {
+      const lastEntry = data.timeSeriesData[data.timeSeriesData.length - 1];
+      setMemoryUsed(params.ramMemory - lastEntry.memoryLevel);
+      setStateCounts(lastEntry.statesCount);
+    }
+    
+    // Cargar las gráficas actualizadas
+    try {
+      const graphsResponse = await getGraphs();
+      // Forzar recarga de las imágenes añadiendo timestamp
+      const timestamp = new Date().getTime();
+      setGraphUrls({
+        intervals: `http://localhost:8000/graficas/grafica_intervalos.png?t=${timestamp}`,
+        strategies: `http://localhost:8000/graficas/grafica_estrategias.png?t=${timestamp}`
+      });
+    } catch (error) {
+      console.error("Error al cargar gráficas:", error);
+    }
+    
+    setActiveTab('results');
+  } catch (error) {
+    console.error("Error en la simulación:", error);
+    alert("Error al ejecutar la simulación. Consulta la consola para más detalles.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Agregar estado para las URLs de las gráficas
+const [graphUrls, setGraphUrls] = useState({
+  intervals: '',
+  strategies: ''
+});
   
   // Ejecutar todos los experimentos
   const runAllExperiments = async () => {
@@ -453,51 +471,52 @@ const App = () => {
               </div>
             </div>
             
-            {/* Gráfica 1 */}
-            <div className="bg-gradient-to-b from-blue-300/80 to-blue-400/80 backdrop-blur-md rounded-xl overflow-hidden border-2 border-white/50 shadow-lg">
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 border-b-2 border-white/30 relative overflow-hidden">
-                <div className="absolute inset-0 bg-white opacity-30" style={{height: '50%'}}></div>
-                <h2 className="text-lg font-bold text-white drop-shadow-md relative z-10">Tiempos por Intervalo</h2>
-              </div>
-              
-              <div className="p-4 h-60 flex items-center justify-center">
-                <div className="text-blue-800 text-center">
-                  {results ? (
-                    <img 
-                      src="http://localhost:8000/graficas/grafica_intervalos.png" 
-                      alt="Gráfica de intervalos" 
-                      className="max-w-full max-h-full"
-                    />
-                  ) : (
-                    "Ejecute una simulación para ver resultados"
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* Gráfica 2 */}
-            <div className="bg-gradient-to-b from-blue-300/80 to-blue-400/80 backdrop-blur-md rounded-xl overflow-hidden border-2 border-white/50 shadow-lg">
-              <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 border-b-2 border-white/30 relative overflow-hidden">
-                <div className="absolute inset-0 bg-white opacity-30" style={{height: '50%'}}></div>
-                <h2 className="text-lg font-bold text-white drop-shadow-md relative z-10">Comparación de Estrategias</h2>
-              </div>
-              
-              <div className="p-4 h-60 flex items-center justify-center">
-                <div className="text-blue-800 text-center">
-                  {results ? (
-                    <img 
-                      src="http://localhost:8000/graficas/grafica_estrategias.png" 
-                      alt="Gráfica de estrategias" 
-                      className="max-w-full max-h-full"
-                    />
-                  ) : (
-                    "Ejecute una simulación para ver resultados"
-                  )}
-                </div>
-              </div>
-            </div>
+     {/* Gráfica 1 */}
+<div className="bg-gradient-to-b from-blue-300/80 to-blue-400/80 backdrop-blur-md rounded-xl overflow-hidden border-2 border-white/50 shadow-lg">
+  <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 border-b-2 border-white/30 relative overflow-hidden">
+    <div className="absolute inset-0 bg-white opacity-30" style={{height: '50%'}}></div>
+    <h2 className="text-lg font-bold text-white drop-shadow-md relative z-10">Tiempos por Intervalo</h2>
+  </div>
+  
+  <div className="p-4 h-60 flex items-center justify-center">
+    <div className="text-blue-800 text-center w-full h-full">
+      {graphUrls.intervals ? (
+        <img 
+          src={graphUrls.intervals} 
+          alt="Gráfica de intervalos" 
+          className="max-w-full max-h-full mx-auto"
+        />
+      ) : (
+        "Ejecute una simulación para ver resultados"
+      )}
+    </div>
+  </div>
+</div>
+
+{/* Gráfica 2 */}
+<div className="bg-gradient-to-b from-blue-300/80 to-blue-400/80 backdrop-blur-md rounded-xl overflow-hidden border-2 border-white/50 shadow-lg">
+  <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 border-b-2 border-white/30 relative overflow-hidden">
+    <div className="absolute inset-0 bg-white opacity-30" style={{height: '50%'}}></div>
+    <h2 className="text-lg font-bold text-white drop-shadow-md relative z-10">Comparación de Estrategias</h2>
+  </div>
+  
+  <div className="p-4 h-60 flex items-center justify-center">
+    <div className="text-blue-800 text-center w-full h-full">
+      {graphUrls.strategies ? (
+        <img 
+          src={graphUrls.strategies} 
+          alt="Gráfica de estrategias" 
+          className="max-w-full max-h-full mx-auto"
+        />
+      ) : (
+        "Ejecute una simulación para ver resultados"
+      )}
+    </div>
+  </div>
+</div>
           </div>
         )}
+      
         
         {/* Pestaña de configuración */}
         {activeTab === 'settings' && (

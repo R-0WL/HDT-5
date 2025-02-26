@@ -2,6 +2,9 @@
 
 Este proyecto implementa un simulador de sistema operativo que modela el ciclo de vida de procesos, gestión de memoria RAM y planificación de CPU utilizando SimPy para la simulación de eventos discretos.
 
+![image](https://github.com/user-attachments/assets/439342a1-2274-4dfe-8f88-2c9f29089ccc)
+
+
 ## Integrantes del Grupo
 - Fatima Navarro: Frontend y Visualización
 - Rene: Backend (API y Generación de Gráficas)

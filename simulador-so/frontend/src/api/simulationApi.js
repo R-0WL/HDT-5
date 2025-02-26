@@ -24,13 +24,35 @@ export const getExperiments = async () => {
   }
 };
 
-// Obtener URLs de gráficas generadas
-export const getGraphs = async () => {
+// Obtener datos para la gráfica de intervalos
+export const getIntervalData = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/graphs`);
-    return response.data.graphs;
+    const response = await axios.get(`${API_URL}/api/graph-data/intervals`);
+    return response.data;
   } catch (error) {
-    console.error('Error al obtener gráficas:', error);
+    console.error('Error al obtener datos de intervalos:', error);
+    throw error;
+  }
+};
+
+// Obtener datos para la gráfica de estrategias
+export const getStrategiesData = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/api/graph-data/strategies`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener datos de estrategias:', error);
+    throw error;
+  }
+};
+
+// Obtener estadísticas más recientes
+export const getLatestStats = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/api/latest-stats`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener estadísticas:', error);
     throw error;
   }
 };

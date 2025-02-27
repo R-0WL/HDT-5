@@ -68,7 +68,7 @@ simulador-so/
 
 ## Instrucciones para Cada Integrante
 
-### Tu Parte (Frontend)
+### Fatima (Frontend)
 1. Implementa los componentes de React en la carpeta `frontend/src/components/`
 2. Instala las dependencias necesarias: `npm install chart.js react-chartjs-2`
 3. Utiliza el archivo `simulationApi.js` para comunicarte con el backend

@@ -17,25 +17,53 @@ RANDOM_SEED = 42
 random.seed(RANDOM_SEED)
 
 class Process:
-    """
-    Representa un proceso en el sistema operativo.
+    def __init__(self, env: simpy.Environment, pid: int, size: int, instructions: int):
+        """
+        Clase que representa un proceso en la simulación del sistema operativo.
+        
+        :param env: Entorno de SimPy donde se ejecuta la simulación.
+        :param pid: Identificador único del proceso.
+        :param size: Cantidad de memoria RAM requerida por el proceso.
+        :param instructions: Número total de instrucciones que ejecutará el proceso.
+        """
+        self.env = env
+        self.pid = pid
+        self.size = size
+        self.instructions = instructions
+        self.state = "new"  # Estados: new, ready, running, terminated
+        self.start_time = None
+        self.completion_time = None
     
-    La clase Process modela un programa en ejecución dentro del sistema operativo.
-    Cada proceso tiene un ciclo de vida que pasa por diferentes estados:
-    new -> ready -> running -> (waiting/ready/terminated)
-    
-    Atributos:
-        id (int): Identificador único del proceso
-        env (simpy.Environment): Entorno de simulación
-        memory (int): Cantidad de memoria RAM requerida (1-10)
-        instructions (int): Número total de instrucciones a ejecutar (1-10)
-        state (str): Estado actual del proceso (new, ready, running, waiting, terminated)
-        arrival_time (float): Tiempo de llegada al sistema
-        completion_time (float): Tiempo de finalización (None si no ha terminado)
-    
-    Responsabilidad de José: Implementar esta clase con todos sus atributos y métodos.
-    """
-    id_counter = 0
+    def execute(self, cpu: simpy.Resource, ram: simpy.Container, instruction_per_cycle: int):
+        """
+        Simula la ejecución del proceso en el sistema operativo.
+        
+        :param cpu: Recurso CPU de SimPy.
+        :param ram: Contenedor de memoria RAM.
+        :param instruction_per_cycle: Cantidad de instrucciones ejecutadas por ciclo.
+        """
+        self.state = "ready"
+        self.start_time = self.env.now
+        print(f"[{self.env.now}] Proceso {self.pid} creado y esperando memoria ({self.size} MB).")
+        
+        # Solicitar RAM
+        yield ram.get(self.size)
+        print(f"[{self.env.now}] Proceso {self.pid} obtuvo {self.size} MB de RAM, listo para ejecución.")
+        
+        while self.instructions > 0:
+            self.state = "running"
+            with cpu.request() as req:
+                yield req  # Esperar CPU
+                print(f"[{self.env.now}] Proceso {self.pid} ejecutando en CPU.")
+                yield self.env.timeout(1)  # Simula el uso del CPU por un ciclo
+                self.instructions -= instruction_per_cycle
+                print(f"[{self.env.now}] Proceso {self.pid} ejecutó instrucciones restantes: {self.instructions}.")
+        
+        # Liberar RAM y finalizar proceso
+        yield ram.put(self.size)
+        self.state = "terminated"
+        self.completion_time = self.env.now
+        print(f"[{self.env.now}] Proceso {self.pid} finalizado, liberando {self.size} MB de RAM.")
     
     def __init__(self, env, pid=None):
         """
@@ -68,29 +96,66 @@ class Process:
         return f"Proceso {self.id} - Estado: {self.state}, Memoria: {self.memory}, Instrucciones: {self.instructions}"
 
 class OSSimulation:
-    """
-    Clase principal que maneja la simulación del sistema operativo.
+    def __init__(self, env, num_processes, arrival_interval, ram_size, instructions_per_unit, num_cpus):
+        self.env = env
+        self.num_processes = num_processes
+        self.arrival_interval = arrival_interval
+        self.ram = simpy.Container(env, init=ram_size, capacity=ram_size)
+        self.instructions_per_unit = instructions_per_unit
+        self.cpu = simpy.Resource(env, capacity=num_cpus)
+        self.waiting_queue = simpy.Resource(env, capacity=1)  # Cola para I/O
+        self.processes = []
+        self.completed_processes = []
+        self.process_times = []
+        self.time_series_data = []
     
-    Esta clase coordina toda la simulación, incluyendo la creación de procesos,
-    la gestión de recursos (RAM, CPU), y el ciclo de vida de los procesos.
-    Implementa el modelo del sistema operativo descrito en la especificación.
+    def generate_processes(self):
+        """Genera procesos y los añade al entorno de SimPy."""
+        for i in range(self.num_processes):
+            process = Process(
+                pid=i,
+                env=self.env,
+                ram=self.ram,
+                cpu=self.cpu,
+                waiting_queue=self.waiting_queue,
+                instructions=random.randint(1, 10) * self.instructions_per_unit
+            )
+            self.processes.append(process)
+            self.env.process(self.process_lifecycle(process))
+            yield self.env.timeout(random.expovariate(1.0 / self.arrival_interval))
     
-    Atributos:
-        env (simpy.Environment): Entorno de simulación
-        num_processes (int): Número total de procesos a crear
-        arrival_interval (float): Intervalo promedio entre llegadas de procesos
-        ram (simpy.Container): Recurso que representa la memoria RAM
-        instructions_per_unit (int): Número de instrucciones ejecutadas por unidad de tiempo
-        cpu (simpy.Resource): Recurso que representa el/los CPU(s)
-        waiting_queue (simpy.Resource): Cola para operaciones de I/O
-        processes (list): Lista de todos los procesos creados
-        completed_processes (list): Lista de procesos terminados
-        process_times (list): Tiempos de ejecución de los procesos
-        time_series_data (list): Datos para análisis de series temporales
+    def process_lifecycle(self, process):
+        """Maneja el ciclo de vida de un proceso dentro del sistema operativo."""
+        yield self.env.process(process.request_ram())
         
-    Responsabilidad de José: Implementar esta clase con todos sus métodos para 
-    modelar correctamente el ciclo de vida de los procesos.
-    """
+        start_time = self.env.now
+        while process.instructions_remaining > 0:
+            with self.cpu.request() as req:
+                yield req  # Espera acceso a la CPU
+                yield self.env.process(process.execute(self.instructions_per_unit))
+            
+            if random.random() < 0.1:  # Simulación de I/O con probabilidad del 10%
+                with self.waiting_queue.request() as io_req:
+                    yield io_req
+                    yield self.env.timeout(random.uniform(1, 3))  # Simulación de tiempo de I/O
+        
+        process.terminate()
+        self.completed_processes.append(process)
+        self.process_times.append(self.env.now - start_time)
+    
+    def run_simulation(self):
+        """Ejecuta la simulación creando procesos y ejecutándolos en el entorno."""
+        self.env.process(self.generate_processes())
+        self.env.run()
+    
+    def get_results(self):
+        """Devuelve métricas sobre la simulación."""
+        avg_time = sum(self.process_times) / len(self.process_times) if self.process_times else 0
+        return {
+            "completed_processes": len(self.completed_processes),
+            "average_execution_time": avg_time
+        }
+
     
     def __init__(self, env, num_processes, arrival_interval, ram_size, instructions_per_unit, num_cpus=1):
         """
@@ -187,9 +252,11 @@ class OSSimulation:
         # Implementar la ejecución de la simulación
         pass
 
+import simpy
+
 def run_experiment(num_processes=50, arrival_interval=10, ram_memory=100, 
-                  instructions_per_unit=3, num_cpus=1, include_time_series=False,
-                  max_simulation_time=1000):
+                   instructions_per_unit=3, num_cpus=1, include_time_series=False,
+                   max_simulation_time=1000):
     """
     Ejecuta un experimento de simulación con los parámetros dados.
     
@@ -207,12 +274,25 @@ def run_experiment(num_processes=50, arrival_interval=10, ram_memory=100,
         
     Returns:
         dict: Resultados del experimento
-        
-    Responsabilidad de José: Implementar esta función para ejecutar experimentos
-    individuales correctamente.
     """
-    # Implementar la configuración y ejecución de un experimento
-    pass
+    env = simpy.Environment()
+    
+    # Crear instancia de la simulación con los parámetros dados
+    simulation = OSSimulation(env, num_processes, arrival_interval, ram_memory,
+                              instructions_per_unit, num_cpus, include_time_series)
+    
+    # Ejecutar la simulación hasta que termine o alcance el tiempo máximo
+    env.run(until=max_simulation_time)
+    
+    # Obtener resultados
+    results = {
+        "completed_processes": len(simulation.completed_processes),
+        "avg_time_per_process": (sum(simulation.process_times) / len(simulation.process_times)) if simulation.process_times else 0,
+        "time_series_data": simulation.time_series_data if include_time_series else None
+    }
+    
+    return results
+
 
 def run_all_experiments():
     """
@@ -226,12 +306,36 @@ def run_all_experiments():
     
     Returns:
         dict: Diccionario con los resultados de todos los experimentos
-        
-    Responsabilidad de José: Implementar esta función para ejecutar y recopilar
-    resultados de todos los experimentos solicitados.
     """
-    # Implementar la ejecución de todos los experimentos
-    pass
+    # Definir parámetros a probar
+    num_processes_list = [25, 50, 100, 150, 200]
+    arrival_intervals = [10, 5, 1]
+    configurations = [
+        {"ram_memory": 100, "instructions_per_unit": 3, "num_cpus": 1},  # Configuración base
+        {"ram_memory": 200, "instructions_per_unit": 3, "num_cpus": 1},  # Más RAM
+        {"ram_memory": 100, "instructions_per_unit": 6, "num_cpus": 1},  # CPU rápido
+        {"ram_memory": 100, "instructions_per_unit": 3, "num_cpus": 2},  # 2 CPUs
+    ]
+    
+    results = {}
+
+    # Ejecutar experimentos con todas las combinaciones de parámetros
+    for num_processes in num_processes_list:
+        for arrival_interval in arrival_intervals:
+            for config in configurations:
+                experiment_key = f"P{num_processes}_A{arrival_interval}_RAM{config['ram_memory']}_CPU{config['num_cpus']}_Speed{config['instructions_per_unit']}"
+                results[experiment_key] = run_experiment(
+                    num_processes=num_processes,
+                    arrival_interval=arrival_interval,
+                    ram_memory=config["ram_memory"],
+                    instructions_per_unit=config["instructions_per_unit"],
+                    num_cpus=config["num_cpus"],
+                    include_time_series=False,
+                    max_simulation_time=1000
+                )
+
+    return results
+
 
 
 # esto la verdad es solo para probar, pero no me gusta el if name == main pero era la opcion mas viable.

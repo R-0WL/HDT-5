@@ -100,6 +100,8 @@ simulador-so/
 
 ## Cómo Iniciar el Proyecto
 
+USAR GIT BASH SI ESTAS EN WINDOWS Y DESCARGA NODE.JS
+
 1. Clona el repositorio
 2. Instala las dependencias:
    ```bash

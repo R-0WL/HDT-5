@@ -37,7 +37,6 @@ Este proyecto implementa un simulador de sistema operativo que modela el ciclo d
 
 ## Estructura del Proyecto
 
-```
 simulador-so/
 ├── backend/
 │   ├── app.py                # API (Rene)
@@ -63,8 +62,9 @@ simulador-so/
 │   │   └── index.js
 │   ├── package.json
 │   └── tailwind.config.js
-└── start.sh                  # Script para iniciar el proyecto
-```
+├── start.sh                  # Script para iniciar el proyecto (Linux/Mac)
+└── start.bat                 # Script para iniciar el proyecto (Windows)
+
 
 ## Instrucciones para Cada Integrante
 
@@ -100,7 +100,73 @@ simulador-so/
 
 ## Cómo Iniciar el Proyecto
 
-USAR GIT BASH SI ESTAS EN WINDOWS Y DESCARGA NODE.JS
+## Cómo Iniciar el Proyecto en Windows
+Requisitos previos para Windows:
+
+-Python 3.8 o superior
+-Node.js y npm
+-Visual Studio Code (recomendado)
+
+Instalación:
+
+Clona el repositorio o descarga los archivos
+Instala las dependencias del backend:
+Copycd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+
+Instala las dependencias del frontend:
+Copycd ..\frontend
+npm install
+npm install chart.js@3.9.1 react-chartjs-2@4.3.1
+
+
+Ejecución del proyecto:
+Opción 1: Usando el script batch
+
+Desde la carpeta raíz del proyecto, ejecuta:
+Copystart.bat
+
+Se abrirán dos ventanas de terminal, una para el backend y otra para el frontend
+Espera a que ambos servicios inicien
+Accede a la aplicación en: http://localhost:3000
+
+Opción 2: Inicio manual
+
+Inicia el backend:
+Copycd backend
+venv\Scripts\activate
+python app.py
+
+En otra ventana de terminal, inicia el frontend:
+Copycd frontend
+npm start
+
+Accede a la aplicación en: http://localhost:3000
+
+## Problemas comunes en Windows:
+
+Error "react-scripts no se reconoce como un comando interno o externo":
+
+Solución: Ejecuta npm install react-scripts en la carpeta frontend
+
+
+Error "File at path ../frontend/build/index.html does not exist":
+
+Solución: Construye primero la aplicación de React con cd frontend && npm run build
+
+
+Error de CORS al conectar con el backend:
+
+Verifica que el backend tenga configurada correctamente la política de CORS en app.py
+
+
+Si el script start.bat no funciona:
+
+Inicia los servicios manualmente como se indica en "Opción 2: Inicio manual"
+
+## En macos o linux
 
 1. Clona el repositorio
 2. Instala las dependencias:

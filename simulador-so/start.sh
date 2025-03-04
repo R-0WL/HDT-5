@@ -15,6 +15,18 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}=== Iniciando Simulador de Sistema Operativo ===${NC}"
 
+# Verificar si Python está instalado
+if ! command -v python3 &> /dev/null; then
+  echo -e "${YELLOW}Python 3 no está instalado o no está en el PATH.${NC}"
+  exit 1
+fi
+
+# Verificar si Node.js está instalado (para React)
+if ! command -v npm &> /dev/null; then
+  echo -e "${YELLOW}Node.js/npm no está instalado o no está en el PATH.${NC}"
+  exit 1
+fi
+
 # Crear directorios necesarios
 mkdir -p backend/graficas
 
@@ -37,7 +49,7 @@ pip install -r requirements.txt
 
 # Iniciar servidor backend en segundo plano
 echo -e "${GREEN}Iniciando servidor backend...${NC}"
-python3 app.py &
+python app.py &
 BACKEND_PID=$!
 
 # Cambiar al directorio frontend
@@ -47,10 +59,6 @@ cd ../frontend
 if [ ! -d "node_modules" ]; then
   echo -e "${YELLOW}Instalando dependencias del frontend...${NC}"
   npm install
-  
-  # Instalar Chart.js explícitamente
-  echo -e "${YELLOW}Instalando Chart.js...${NC}"
-  npm install chart.js@3.9.1 react-chartjs-2@4.3.1
 fi
 
 # Iniciar servidor de desarrollo de React en segundo plano

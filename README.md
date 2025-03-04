@@ -35,38 +35,8 @@ Este proyecto implementa un simulador de sistema operativo que modela el ciclo d
   - `Resource` para CPU(s)
 - Desarrollar las funciones `run_experiment()` y `run_all_experiments()`
 
-## Estructura del Proyecto
 
-simulador-so/
-├── backend/
-│   ├── app.py                # API (Rene)
-│   ├── simulation.py         # Simulación (José)
-│   ├── requirements.txt      # Dependencias de Python
-│   └── graficas/             # Carpeta para almacenar gráficas
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── simulationApi.js
-│   │   ├── components/
-│   │   │   ├── App.jsx
-│   │   │   ├── layout/
-│   │   │   ├── simulation/
-│   │   │   ├── results/
-│   │   │   │   ├── Graph.jsx
-│   │   │   │   ├── IntervalGraph.jsx
-│   │   │   │   ├── StrategiesGraph.jsx
-│   │   │   │   └── Results.jsx
-│   │   │   └── settings/
-│   │   ├── styles/
-│   │   └── index.js
-│   ├── package.json
-│   └── tailwind.config.js
-├── start.sh                  # Script para iniciar el proyecto (Linux/Mac)
-└── start.bat                 # Script para iniciar el proyecto (Windows)
-
-
-## Instrucciones para Cada Integrante
+Instrucciones para Cada Integrante
 
 ### Fatima (Frontend)
 1. Implementa los componentes de React en la carpeta `frontend/src/components/`
